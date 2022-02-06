@@ -53,7 +53,6 @@ export class AwsCdkCognitoTestStack extends Stack {
             generateSecret: true,
             supportedIdentityProviders: [
                 UserPoolClientIdentityProvider.GOOGLE,
-                UserPoolClientIdentityProvider.COGNITO,
             ],
             oAuth: {
                 scopes: [
@@ -61,7 +60,6 @@ export class AwsCdkCognitoTestStack extends Stack {
                 ],
                 flows: {
                     authorizationCodeGrant: true,
-                    implicitCodeGrant: true,
                 },
                 callbackUrls: [
                     restApi.urlForPath('/auth/callback'),
@@ -69,10 +67,6 @@ export class AwsCdkCognitoTestStack extends Stack {
             }
         });
         // https://test-2022.auth.us-east-1.amazoncognito.com/oauth2/authorize?identity_provider=Google&redirect_uri=https://lcgex3opdd.execute-api.us-east-1.amazonaws.com/prod/callback&response_type=CODE&client_id=6hcdr9ei7kvpug7jposnsedt5f&scope=email
-
-        const signInUrl = domain.signInUrl(client, {
-            redirectUri: restApi.urlForPath('/auth/callback'),
-        });
 
         authResource
             .addResource('callback')
