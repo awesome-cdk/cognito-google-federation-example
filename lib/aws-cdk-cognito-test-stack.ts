@@ -1,15 +1,18 @@
-import {CfnOutput, RemovalPolicy, Stack, StackProps} from "aws-cdk-lib";
+import {CfnOutput, Lazy, RemovalPolicy, Stack, StackProps} from "aws-cdk-lib";
 import {
     ProviderAttribute,
     UserPool,
     UserPoolClient,
     UserPoolClientIdentityProvider,
-    UserPoolIdentityProviderGoogle
+    UserPoolIdentityProviderGoogle,
+    OAuthScope
 } from "aws-cdk-lib/aws-cognito";
 import {Construct} from "constructs";
 import {LambdaIntegration, RestApi} from "aws-cdk-lib/aws-apigateway";
 import {NodejsFunction} from "aws-cdk-lib/aws-lambda-nodejs";
 import * as path from "path";
+import {StringParameter} from "aws-cdk-lib/aws-ssm";
+import {PolicyStatement} from "aws-cdk-lib/aws-iam";
 
 export class AwsCdkCognitoTestStack extends Stack {
     constructor(scope: Construct, id: string, props?: StackProps) {
@@ -17,6 +20,11 @@ export class AwsCdkCognitoTestStack extends Stack {
 
         const userPool = new UserPool(this, "UserPool", {
             removalPolicy: RemovalPolicy.DESTROY,
+        });
+        const domain = userPool.addDomain('default', {
+            cognitoDomain: {
+                domainPrefix: 'test-2022',
+            },
         });
 
         new UserPoolIdentityProviderGoogle(this, 'Google', {
@@ -32,7 +40,41 @@ export class AwsCdkCognitoTestStack extends Stack {
         });
 
         const restApi = new RestApi(this, 'RestApi');
-        restApi.root
+        const authResource = restApi.root.addResource('auth');
+
+        const client = new UserPoolClient(this, 'UserPoolClient', {
+            userPool,
+            authFlows: {
+                userPassword: true,
+                custom: true,
+                adminUserPassword: true,
+                userSrp: true,
+            },
+            generateSecret: true,
+            supportedIdentityProviders: [
+                UserPoolClientIdentityProvider.GOOGLE,
+                UserPoolClientIdentityProvider.COGNITO,
+            ],
+            oAuth: {
+                scopes: [
+                    OAuthScope.EMAIL,
+                ],
+                flows: {
+                    authorizationCodeGrant: true,
+                    implicitCodeGrant: true,
+                },
+                callbackUrls: [
+                    restApi.urlForPath('/auth/callback'),
+                ],
+            }
+        });
+        // https://test-2022.auth.us-east-1.amazoncognito.com/oauth2/authorize?identity_provider=Google&redirect_uri=https://lcgex3opdd.execute-api.us-east-1.amazonaws.com/prod/callback&response_type=CODE&client_id=6hcdr9ei7kvpug7jposnsedt5f&scope=email
+
+        const signInUrl = domain.signInUrl(client, {
+            redirectUri: restApi.urlForPath('/auth/callback'),
+        });
+
+        authResource
             .addResource('callback')
             .addMethod(
                 'GET',
@@ -41,42 +83,30 @@ export class AwsCdkCognitoTestStack extends Stack {
                     })
                 ));
 
-        const client = new UserPoolClient(this, 'UserPoolClient', {
-            userPool,
-            authFlows: {
-                userPassword: true,
-                custom: true,
-            },
-            supportedIdentityProviders: [
-                UserPoolClientIdentityProvider.GOOGLE,
-                UserPoolClientIdentityProvider.COGNITO,
-            ],
-            oAuth: {
-                callbackUrls: [
-                    restApi.urlForPath('/callback'),
-                ],
-            }
+        const LOGIN_URL = `https://${domain.domainName}.auth.${Stack.of(userPool).region}.amazoncognito.com/oauth2/authorize?identity_provider=Google&redirect_url=${restApi.urlForPath('/auth/callback')}&response_type=CODE&client_id=${client.userPoolClientId}`;
+
+        new CfnOutput(this, 'GoogleLoginURL', {
+            value: LOGIN_URL,
         });
 
-        // https://test-2022.auth.us-east-1.amazoncognito.com/oauth2/authorize?identity_provider=Google&redirect_uri=https://lcgex3opdd.execute-api.us-east-1.amazonaws.com/prod/callback&response_type=CODE&client_id=7hvpeu8e9efuoou7gvfgb0599&scope=openid
-
-        const domain = userPool.addDomain('default', {
-            cognitoDomain: {
-                domainPrefix: 'test-2022',
-            },
-        });
-        const signInUrl = domain.signInUrl(client, {
-            redirectUri: "https://abv.bg",
+        new StringParameter(this, 'LoginUrl', {
+            parameterName: 'login-url',
+            stringValue: LOGIN_URL,
         })
 
-        new CfnOutput(this, 'UserPoolDomain', {
-            value: domain.domainName,
-        });
-        new CfnOutput(this, 'UserPoolDomain-GoogleRedirectUrl', {
-            value: domain.domainName + '/oauth2/idpresponse',
-        });
-        new CfnOutput(this, 'UserPoolDomain-signInUrl', {
-            value: signInUrl,
-        });
+        authResource
+            .addResource('login')
+            .addMethod(
+                'GET',
+                new LambdaIntegration(new NodejsFunction(this, 'NodejsFunction/login', {
+                        entry: path.resolve(__dirname, 'api/lambda/login.lambda.ts'),
+                        initialPolicy: [
+                            new PolicyStatement({
+                                actions: ['ssm:GetParameter'],
+                                resources: ['*'],
+                            })
+                        ],
+                    })
+                ));
     }
 }

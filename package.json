@@ -24,6 +24,7 @@
     "@types/aws-lambda": "^8.10.92",
     "aws-cdk-lib": "2.10.0",
     "aws-lambda": "^1.0.7",
+    "aws-sdk": "^2.1069.0",
     "axios": "^0.25.0",
     "cdk-watch": "^0.0.25",
     "constructs": "^10.0.0",
