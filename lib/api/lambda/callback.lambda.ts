@@ -1,29 +1,33 @@
-import {APIGatewayProxyHandler, Handler} from "aws-lambda";
+import {APIGatewayProxyHandler} from "aws-lambda";
 import axios from "axios";
 import * as querystring from "querystring";
+import {getParameterValue} from "./login.lambda";
 
 export const handler: APIGatewayProxyHandler = async (event) => {
-    try {
-        const authorizationCode = event.queryStringParameters!.code;
+    const client_id = await getParameterValue(`/${String(process.env.PARAMETER_STORE_PREFIX)}/userpool/client_id`);
+    const client_secret = await getParameterValue(`/${String(process.env.PARAMETER_STORE_PREFIX)}/userpool/client_secret`);
+    const userPoolDomainName = await getParameterValue(`/${String(process.env.PARAMETER_STORE_PREFIX)}/userpool/domain_prefix`);
+    const userPoolRegion = await getParameterValue(`/${String(process.env.PARAMETER_STORE_PREFIX)}/userpool/region`);
 
-        const clientId = '6hcdr9ei7kvpug7jposnsedt5f';
-        const clientSecret = '1j7st358fg609ip6tq6v5hna1vfrreau1k9jibsll0ep9t1m678k';
+    try {
+        const code = event.queryStringParameters!.code;
+
+        const redirect_uri = `https://${event.requestContext.domainName}/${event.requestContext.stage}/auth/callback`;
 
         const data = querystring.stringify({
+            client_id,
+            code,
             grant_type: 'authorization_code',
-            client_id: clientId,
-            redirect_uri: 'https://lcgex3opdd.execute-api.us-east-1.amazonaws.com/prod/auth/callback',
-            code: authorizationCode,
+            redirect_uri,
         });
 
-        const result = await axios.post('https://test-2022.auth.us-east-1.amazoncognito.com/oauth2/token', data, {
+        const authorizationEncoded = Buffer.from(`${client_id}:${client_secret}`).toString('base64');
+        const result = await axios.post(`https://${userPoolDomainName}.auth.${userPoolRegion}.amazoncognito.com/oauth2/token`, data, {
             headers: {
-                'Authorization': 'Basic ' + Buffer.from(`${clientId}:${clientSecret}`).toString('base64'),
+                'Authorization': `Basic ${authorizationEncoded}`,
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
         });
-        console.log(result.status);
-        console.log(result.data);
 
         return {
             statusCode: 200,
