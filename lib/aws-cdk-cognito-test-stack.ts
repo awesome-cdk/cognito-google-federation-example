@@ -1,19 +1,26 @@
-import {CfnOutput, Lazy, RemovalPolicy, Stack, StackProps} from "aws-cdk-lib";
+import {Duration, RemovalPolicy, Stack, StackProps} from "aws-cdk-lib";
 import {
     ProviderAttribute,
     UserPool,
     UserPoolClient,
     UserPoolClientIdentityProvider,
-    UserPoolIdentityProviderGoogle,
-    OAuthScope
+    UserPoolIdentityProviderGoogle
 } from "aws-cdk-lib/aws-cognito";
 import {Construct} from "constructs";
-import {LambdaIntegration, RestApi} from "aws-cdk-lib/aws-apigateway";
+import {
+    AwsIntegration,
+    CognitoUserPoolsAuthorizer,
+    HttpIntegration,
+    LambdaIntegration,
+    RestApi
+} from "aws-cdk-lib/aws-apigateway";
 import {NodejsFunction} from "aws-cdk-lib/aws-lambda-nodejs";
 import * as path from "path";
 import {StringParameter} from "aws-cdk-lib/aws-ssm";
-import {PolicyStatement} from "aws-cdk-lib/aws-iam";
+import {IRole, PolicyStatement, Role, ServicePrincipal} from "aws-cdk-lib/aws-iam";
 import {AwsCustomResource, AwsCustomResourcePolicy, PhysicalResourceId} from "aws-cdk-lib/custom-resources";
+import {Frontend} from "./Frontend/Frontend";
+import {IBucket} from "aws-cdk-lib/aws-s3";
 
 export class AwsCdkCognitoTestStack extends Stack {
     constructor(scope: Construct, id: string, props?: StackProps) {
@@ -49,7 +56,18 @@ export class AwsCdkCognitoTestStack extends Stack {
             },
         });
 
-        const restApi = new RestApi(this, 'RestApi');
+        const restApi = new RestApi(this, 'RestApi', {
+            deployOptions: {
+                cacheTtl: Duration.seconds(0),
+            },
+        });
+
+        const cognitoUserPoolsAuthorizer = new CognitoUserPoolsAuthorizer(this, 'CognitoUserPoolsAuthorizer', {
+            cognitoUserPools: [userPool],
+            resultsCacheTtl: Duration.seconds(0),
+        })
+
+        const callbackUrl = restApi.urlForPath('/public/index.html');
 
         const client = new UserPoolClient(this, 'UserPoolClient', {
             userPool,
@@ -59,7 +77,7 @@ export class AwsCdkCognitoTestStack extends Stack {
             ],
             oAuth: {
                 callbackUrls: [
-                    restApi.urlForPath('/auth/callback'),
+                    callbackUrl,
                 ],
             }
         });
@@ -131,5 +149,39 @@ export class AwsCdkCognitoTestStack extends Stack {
                     },
                 })
             ));
+
+        restApi.root
+            .resourceForPath('/user')
+            .addMethod(
+                'GET',
+                new LambdaIntegration(new NodejsFunction(this, 'NodejsFunction/getUser', {
+                    entry: path.resolve(__dirname, 'api/lambda/getUser.lambda.ts'),
+                })),
+                {
+                    authorizer: cognitoUserPoolsAuthorizer,
+                });
+
+        // Infrastructure for /public path of API Gateway, leading to a static dummy frontend
+        const frontend = new Frontend(this, 'Frontend');
+        restApi.root
+            .resourceForPath("public")
+            .addProxy({
+                defaultIntegration: new HttpIntegration(`${frontend.bucket.bucketWebsiteUrl}/{proxy}`, {
+                    httpMethod: "GET",
+                    options: {
+                        requestParameters: {
+                            "integration.request.path.proxy": "method.request.path.proxy",
+                        },
+                    },
+                    proxy: true,
+                },),
+                defaultMethodOptions: {
+                    methodResponses: [{statusCode: "200"}],
+                    requestParameters: {
+                        "method.request.path.proxy": true,
+                    },
+                },
+            });
     }
+
 }

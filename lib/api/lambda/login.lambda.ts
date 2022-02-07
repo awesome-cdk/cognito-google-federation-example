@@ -21,7 +21,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const url = new URL('/oauth2/authorize', `https://${userPoolDomainName}.auth.${userPoolRegion}.amazoncognito.com`);
     url.searchParams.append('identity_provider', 'Google');
-    url.searchParams.append('redirect_url', `https://${event.requestContext.domainName}/${event.requestContext.stage}/auth/callback`);
+    url.searchParams.append('redirect_url', `https://${event.requestContext.domainName}/${event.requestContext.stage}/public/index.html`);
     url.searchParams.append('response_type', 'code');
     url.searchParams.append('client_id', userPoolClientId);
 
@@ -29,6 +29,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         statusCode: 200,
         body: JSON.stringify({
             login_url: url.toString(),
-        })
+        }),
+        headers: {
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "*",
+        }
     }
 }

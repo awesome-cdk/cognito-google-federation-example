@@ -12,7 +12,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     try {
         const code = event.queryStringParameters!.code;
 
-        const redirect_uri = `https://${event.requestContext.domainName}/${event.requestContext.stage}/auth/callback`;
+        const redirect_uri = `https://${event.requestContext.domainName}/${event.requestContext.stage}/public/index.html`;
 
         const data = querystring.stringify({
             client_id,
@@ -35,12 +35,22 @@ export const handler: APIGatewayProxyHandler = async (event) => {
                 success: true,
                 data: result.data,
             }),
+            headers: {
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "*",
+            }
         }
     } catch (e) {
         console.error(e);
         return {
             statusCode: 500,
             body: JSON.stringify(e, null, 2),
+            headers: {
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "*",
+            }
         }
     }
 }
