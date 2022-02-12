@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>AWS Cognito + Google integration example, using AWS CDK</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="header">AWS Cognito + Google</h1>
+        <p>
+            Using AWS CDK to deploy the required infrastructure, to create a Cognito UserPool, with Google federated
+            identity integration, so your application users can use their Google account to login directly to your app.
+        </p>
+        <div id="root"></div>
+
+
+        <a class="btn" onclick="attemptLogin()" id="initiate-login"><i
+                class="material-icons right">arrow_forward</i>Login with Google</a>
+
+        <div id="login-in-progress">
+            <div class="preloader-wrapper small active">
+                <div class="spinner-layer spinner-green-only">
+                    <div class="circle-clipper left">
+                        <div class="circle"></div>
+                    </div>
+                    <div class="gap-patch">
+                        <div class="circle"></div>
+                    </div>
+                    <div class="circle-clipper right">
+                        <div class="circle"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="login-result">
+            Login result will be here
+        </div>
+    </div>
+
+    <script>
+        const baseUrl = 'https://lcgex3opdd.execute-api.us-east-1.amazonaws.com/prod';
+
+        function attemptLogin() {
+            fetch(baseUrl + '/auth/login')
+                .then(result => result.json())
+                .then(result => {
+                    if (result.login_url) {
+                        window.location.href = result.login_url;
+                    } else {
+                        alert('Login URL not returned from backend!');
+                    }
+                })
+        }
+
+        const urlSearchParams = new URLSearchParams(window.location.search);
+        const params = Object.fromEntries(urlSearchParams.entries());
+
+        if (params && params.code) {
+            document.querySelector('#initiate-login').style.display = 'none';
+            document.querySelector('#login-result').style.display = 'none';
+
+            const url = new URL(baseUrl + "/auth/callback");
+            url.searchParams.append('code', params.code);
+
+            fetch(url.toString())
+                .then(result => result.json())
+                .then(result => {
+                    const idToken = result.data['id_token'];
+                    return fetch(baseUrl + "/user", {
+                        headers: {
+                            'Authorization': 'Bearer ' + idToken
+                        },
+                    }).then(result => result.json())
+                })
+                .then(result => {
+                    document.querySelector('#login-in-progress').style.display = 'none';
+                    document.querySelector('#login-result').style.display = 'block';
+                    document.querySelector('#login-result').innerHTML = '<pre>' + JSON.stringify(result.user, null, 2) + '</pre>';
+                });
+        } else {
+            document.querySelector('#login-in-progress').style.display = 'none';
+            document.querySelector('#login-result').style.display = 'none';
+        }
+    </script>
+</body>
+
+</html>

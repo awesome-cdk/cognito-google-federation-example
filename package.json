@@ -28,6 +28,8 @@
     "axios": "^0.25.0",
     "cdk-watch": "^0.0.25",
     "constructs": "^10.0.0",
+    "ejs": "^3.1.6",
+    "serverless-http": "^2.7.0",
     "source-map-support": "^0.5.16"
   }
 }

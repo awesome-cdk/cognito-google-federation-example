@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import "source-map-support/register";
 import * as cdk from "aws-cdk-lib";
-import { AwsCdkCognitoTestStack } from "../lib/aws-cdk-cognito-test-stack";
+import {AwsCdkCognitoTestStack} from "../lib/aws-cdk-cognito-test-stack";
 
 const app = new cdk.App();
 new AwsCdkCognitoTestStack(app, "AwsCdkCognitoTestStack", {
