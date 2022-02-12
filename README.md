@@ -2,6 +2,8 @@
 
 Use Cognito's Google federated identity integration to allow your app users to login with their Google account.
 
+**[Live Demo](https://eehvlyuzre.execute-api.us-east-1.amazonaws.com/prod/public)**
+
 ### Benefits of implementing this
 
 * Allow your app users to login to your app with their Google account.
