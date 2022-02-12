@@ -1,7 +1,7 @@
 import {APIGatewayProxyHandler} from "aws-lambda";
 import axios from "axios";
 import * as querystring from "querystring";
-import {getParameterValue} from "./login.lambda";
+import {getParameterValue} from "../lambdas/shared/getParameterValue";
 
 export const handler: APIGatewayProxyHandler = async (event) => {
     const client_id = await getParameterValue(

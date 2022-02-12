@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <meta charset="utf-8" />
+    <meta charset="utf-8"/>
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>AWS Cognito + Google integration example, using AWS CDK</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -11,84 +11,84 @@
 </head>
 
 <body>
-    <div class="container">
-        <h1 class="header">AWS Cognito + Google</h1>
-        <p>
-            Using AWS CDK to deploy the required infrastructure, to create a Cognito UserPool, with Google federated
-            identity integration, so your application users can use their Google account to login directly to your app.
-        </p>
-        <div id="root"></div>
+<div class="container">
+    <h1 class="header">AWS Cognito + Google</h1>
+    <p>
+        Using AWS CDK to deploy the required infrastructure, to create a Cognito UserPool, with Google federated
+        identity integration, so your application users can use their Google account to login directly to your app.
+    </p>
 
-
-        <a class="btn" onclick="attemptLogin()" id="initiate-login"><i
+    <a class="btn" onclick="attemptLogin()" id="initiate-login"><i
                 class="material-icons right">arrow_forward</i>Login with Google</a>
 
-        <div id="login-in-progress">
-            <div class="preloader-wrapper small active">
-                <div class="spinner-layer spinner-green-only">
-                    <div class="circle-clipper left">
-                        <div class="circle"></div>
-                    </div>
-                    <div class="gap-patch">
-                        <div class="circle"></div>
-                    </div>
-                    <div class="circle-clipper right">
-                        <div class="circle"></div>
-                    </div>
+    <div id="login-in-progress">
+        <!-- Spinner shown while login is in progress -->
+        <div class="preloader-wrapper small active">
+            <div class="spinner-layer spinner-green-only">
+                <div class="circle-clipper left">
+                    <div class="circle"></div>
+                </div>
+                <div class="gap-patch">
+                    <div class="circle"></div>
+                </div>
+                <div class="circle-clipper right">
+                    <div class="circle"></div>
                 </div>
             </div>
         </div>
-
-        <div id="login-result">
-            Login result will be here
-        </div>
     </div>
 
-    <script>
-        const baseUrl = 'https://lcgex3opdd.execute-api.us-east-1.amazonaws.com/prod';
+    <div id="login-result">
+        <!--Login result will be here-->
+    </div>
+</div>
 
-        function attemptLogin() {
-            fetch(baseUrl + '/auth/login')
-                .then(result => result.json())
-                .then(result => {
-                    if (result.login_url) {
-                        window.location.href = result.login_url;
-                    } else {
-                        alert('Login URL not returned from backend!');
-                    }
-                })
-        }
+<script>
+    const baseUrl = '<%= process.env.BASE_URL %>' ?? 'https://iyktgczje9.execute-api.us-east-1.amazonaws.com/prod/';
 
-        const urlSearchParams = new URLSearchParams(window.location.search);
-        const params = Object.fromEntries(urlSearchParams.entries());
+    function attemptLogin() {
+        fetch(`${baseUrl}/auth/login`)
+            .then(result => result.json())
+            .then(result => {
+                if (result.login_url) {
+                    window.location.href = result.login_url;
+                    return;
+                }
+                alert('Login URL not returned from backend!');
+            })
+    }
 
-        if (params && params.code) {
-            document.querySelector('#initiate-login').style.display = 'none';
-            document.querySelector('#login-result').style.display = 'none';
+    const urlSearchParams = new URLSearchParams(window.location.search);
+    const params = Object.fromEntries(urlSearchParams.entries());
 
-            const url = new URL(baseUrl + "/auth/callback");
-            url.searchParams.append('code', params.code);
+    if (params && params.code) {
+        document.querySelector('#initiate-login').style.display = 'none';
+        document.querySelector('#login-result').style.display = 'none';
 
-            fetch(url.toString())
-                .then(result => result.json())
-                .then(result => {
-                    const idToken = result.data['id_token'];
-                    return fetch(baseUrl + "/user", {
-                        headers: {
-                            'Authorization': 'Bearer ' + idToken
-                        },
-                    }).then(result => result.json())
-                })
-                .then(result => {
-                    document.querySelector('#login-in-progress').style.display = 'none';
-                    document.querySelector('#login-result').style.display = 'block';
-                    document.querySelector('#login-result').innerHTML = '<pre>' + JSON.stringify(result.user, null, 2) + '</pre>';
-                });
-        } else {
-            document.querySelector('#login-in-progress').style.display = 'none';
-            document.querySelector('#login-result').style.display = 'none';
-        }
-    </script>
+        const absolutePath = baseUrl === '/prod' ? document.location : undefined;
+        const url = new URL(`${baseUrl}/auth/token`, absolutePath);
+        url.searchParams.append('code', params.code);
+
+        fetch(url.toString())
+            .then(result => result.json())
+            .then(result => result.data['id_token'])
+            .then(idToken => fetch(`${baseUrl}/user`, {
+                headers: {
+                    'Authorization': `Bearer ${idToken}`
+                },
+            }))
+            .then(result => result.json())
+            .then(result => result.user.claims.email)
+            .then(email => {
+                document.querySelector('#login-in-progress').style.display = 'none';
+                document.querySelector('#login-result').style.display = 'block';
+                document.querySelector('#login-result').innerHTML = `Welcome, ${email}`;
+            });
+    } else {
+        document.querySelector('#login-in-progress').style.display = 'none';
+        document.querySelector('#login-result').style.display = 'none';
+    }
+</script>
 </body>
 
 </html>
