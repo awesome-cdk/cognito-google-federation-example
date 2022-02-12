@@ -1,8 +1,6 @@
 import {Construct} from "constructs";
-import {AuthorizationType, CognitoUserPoolsAuthorizer, LambdaIntegration, RestApi} from "aws-cdk-lib/aws-apigateway";
+import {CognitoUserPoolsAuthorizer, RestApi} from "aws-cdk-lib/aws-apigateway";
 import {Duration} from "aws-cdk-lib";
-import {NodejsFunction} from "aws-cdk-lib/aws-lambda-nodejs";
-import * as path from "path";
 import {IUserPool} from "aws-cdk-lib/aws-cognito";
 import {Login} from "./Login/Login";
 import {GetToken} from "./GetToken/GetToken";
@@ -18,6 +16,7 @@ export class BackendAPI extends Construct {
         super(scope, id);
 
         const uniquePrefix = props.uniquePrefix;
+
         const cognitoUserPoolsAuthorizer = new CognitoUserPoolsAuthorizer(this, "CognitoUserPoolsAuthorizer", {
             cognitoUserPools: [props.userPool],
             resultsCacheTtl: Duration.seconds(0),
@@ -26,6 +25,8 @@ export class BackendAPI extends Construct {
         this.api = new RestApi(this, "RestApi", {
             deployOptions: {
                 cacheTtl: Duration.seconds(0),
+                throttlingBurstLimit: 1,
+                throttlingRateLimit: 1,
             },
             defaultCorsPreflightOptions: {
                 allowMethods: ["*"],
@@ -34,8 +35,6 @@ export class BackendAPI extends Construct {
                 allowCredentials: true,
             },
         });
-
-
 
         new Login(this, 'Login', {
             restApi: this.api,

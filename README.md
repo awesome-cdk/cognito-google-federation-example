@@ -1,7 +1,22 @@
-Goals:
+# Cognito + Google federated identity
 
-1. Configure Cognito user pool with Google federated identity provider
-2. Allow users to SSO (Single Sign On) using their account and automatically create a "mirror" user for them in the
-   Cognito user pool, so they don't have to remember a separate username/password.
-3. Implement a dummy frontend that demonstrates how to redirect to Google, approve the signin, get a Cognito user
-   created, get a Cognito token, use it to call private application backed (Lambda-backed API Gateway).
+Use Cognito's Google federated identity integration to allow your app users to login with their Google account.
+
+### Benefits of implementing this
+
+* Allow your app users to login to your app with their Google account.
+* Users are automatically provisioned (mirrored) to your Cognito user pool, should you decide to abandon Google as an
+  SSO provider in the future (or allow your users to link multiple external accounts like Facebook, LinkedIn to the same
+  Cognito user).
+
+### Overview
+
+Here's a Sequence Diagram, describing the user's journey:
+
+[![](https://mermaid.ink/img/pako:eNqdVF9v2jAQ_yonP7USZe_RhNTSbkPqJETHW148-5JYOHZmOwxW9bvv7CQ0tNBp8ISTu9-_8-WZCSuRZczjrxaNwHvFS8fr3AD9Gu6CEqrhJsAXZ01AI9-_ueNic_LF3JZGBfv-xVdrS43d8wH3ZjbrgTJYRTE-QGsU_QFtS2VgvXqEqx4SvlkfUMJ6cd2h9K0E0ldcAtI_P1YSWmcuEjIYuwBklMnIjlQORQCq_y8vB4R5hWIDipCd4VrvQRXQenTAtUMu98DbUKGhKfEI9VuFqp8UcCFsS4MjAVSg9285urIMFkUCsU794UFZA7hrSLUE68Dglrgq3jRoUE4-_3SfZgT46qrnOjiBgrqO4KapaR01Y7Thhx5BOFE51x64kUAkzm7RDxIjfPQIlTr0YM2VnnZOukfjsBZ9TAeFU0jkS8JVnrR4oLAGrBQjcQx0SeLSWp3U1LyBQqGWHrTaIOQsceds3JIguqq36Y5vUh9XGo41eBNUjXA7DmlOC01TBrprbh_XjtdIXs5v25J7_wFWsj0sk7amJBNbGtA486uF_GEJbQK3QqD3_WGFhUNfpdP5RX3YiYqb8pSNeANOU_5z2z5qG6Xw2vcUrMMzbSkD2jW7UTiBRyu4juW8pNPCSNyhvL-bAAZxfT7n75xmT52UF837eNkoJts6io7ugYoKTspgE1ajo7sj6Yv9HJlyRig15iyjvxIL3uqQs9y8UGnbSMJ-kBSyY1lwLU4YsdqnvRHDuavpP_osK4gEX_4CW70jjw)](https://mermaid.live/edit#pako:eNqdVF9v2jAQ_yonP7USZe_RhNTSbkPqJETHW148-5JYOHZmOwxW9bvv7CQ0tNBp8ISTu9-_8-WZCSuRZczjrxaNwHvFS8fr3AD9Gu6CEqrhJsAXZ01AI9-_ueNic_LF3JZGBfv-xVdrS43d8wH3ZjbrgTJYRTE-QGsU_QFtS2VgvXqEqx4SvlkfUMJ6cd2h9K0E0ldcAtI_P1YSWmcuEjIYuwBklMnIjlQORQCq_y8vB4R5hWIDipCd4VrvQRXQenTAtUMu98DbUKGhKfEI9VuFqp8UcCFsS4MjAVSg9285urIMFkUCsU794UFZA7hrSLUE68Dglrgq3jRoUE4-_3SfZgT46qrnOjiBgrqO4KapaR01Y7Thhx5BOFE51x64kUAkzm7RDxIjfPQIlTr0YM2VnnZOukfjsBZ9TAeFU0jkS8JVnrR4oLAGrBQjcQx0SeLSWp3U1LyBQqGWHrTaIOQsceds3JIguqq36Y5vUh9XGo41eBNUjXA7DmlOC01TBrprbh_XjtdIXs5v25J7_wFWsj0sk7amJBNbGtA486uF_GEJbQK3QqD3_WGFhUNfpdP5RX3YiYqb8pSNeANOU_5z2z5qG6Xw2vcUrMMzbSkD2jW7UTiBRyu4juW8pNPCSNyhvL-bAAZxfT7n75xmT52UF837eNkoJts6io7ugYoKTspgE1ajo7sj6Yv9HJlyRig15iyjvxIL3uqQs9y8UGnbSMJ-kBSyY1lwLU4YsdqnvRHDuavpP_osK4gEX_4CW70jjw)
+
+### Repo summary
+
+This repo is an example AWS CDK project that demonstrates how you can provision the whole AWS infrastructure, including
+a dummy NodeJS + Express + API Gateway (with public endpoints for login and protected endpoints to demonstrate a
+protected backend API with resources, only accessible to users that went through the Google SSO procedure).

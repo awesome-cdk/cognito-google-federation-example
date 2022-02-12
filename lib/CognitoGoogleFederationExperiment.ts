@@ -1,23 +1,17 @@
-import {Duration, RemovalPolicy, Stack, StackProps} from "aws-cdk-lib";
+import {RemovalPolicy, Stack, StackProps} from "aws-cdk-lib";
 import {
     ProviderAttribute,
     UserPool,
-    UserPoolClient,
     UserPoolClientIdentityProvider,
     UserPoolIdentityProviderGoogle,
 } from "aws-cdk-lib/aws-cognito";
 import {Construct} from "constructs";
-import {AuthorizationType, CognitoUserPoolsAuthorizer, LambdaIntegration, RestApi,} from "aws-cdk-lib/aws-apigateway";
-import {NodejsFunction} from "aws-cdk-lib/aws-lambda-nodejs";
-import * as path from "path";
 import {StringParameter} from "aws-cdk-lib/aws-ssm";
-import {PolicyStatement,} from "aws-cdk-lib/aws-iam";
-import {AwsCustomResource, AwsCustomResourcePolicy, PhysicalResourceId,} from "aws-cdk-lib/custom-resources";
 import {BackendAPI} from "./api/BackendAPI/BackendAPI";
 import {CustomUserPoolClient} from "./api/CustomUserPoolClient";
 import {PublicEndpoint} from "./api/PublicEndpoint/PublicEndpoint";
 
-export class AwsCdkCognitoTestStack extends Stack {
+export class CognitoGoogleFederationExperiment extends Stack {
     constructor(scope: Construct, id: string, props?: StackProps) {
         super(scope, id, props);
 
