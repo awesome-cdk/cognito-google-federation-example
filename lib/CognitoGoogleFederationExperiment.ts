@@ -49,6 +49,7 @@ export class CognitoGoogleFederationExperiment extends Stack {
             // to fetch the user's email from his Google account after the user does an SSO with Google
             scopes: ["email"],
 
+            // Map fields from the user's Google profile to Cognito user fields, when the user is auto-provisioned
             attributeMapping: {
                 email: ProviderAttribute.GOOGLE_EMAIL,
             },
