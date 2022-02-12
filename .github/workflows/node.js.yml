@@ -26,9 +26,9 @@ jobs:
         with:
           node-version: 14.x
           cache: 'npm'
-      - run: npm ci
       - name: Assume AWS IAM Role
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-region: us-east-1
           role-to-assume: arn:aws:iam::176218606710:role/GithubActionsAssumedRole
+      - run: npm ci
