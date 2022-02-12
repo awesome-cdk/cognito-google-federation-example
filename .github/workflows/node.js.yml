@@ -15,10 +15,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Use Node.js
-      uses: actions/setup-node@v2
-      with:
-        node-version: 14.x
-        cache: 'npm'
-    - run: npm ci
+      - uses: actions/checkout@v2
+      - name: Use Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: 14.x
+          cache: 'npm'
+      - run: npm ci
+      - name: Assume AWS IAM Role
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: us-east-1
+          role-to-assume: my-github-actions-role
