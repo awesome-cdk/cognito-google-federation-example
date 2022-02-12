@@ -31,3 +31,4 @@ jobs:
         with:
           aws-region: us-east-1
           role-to-assume: arn:aws:iam::176218606710:role/GithubActionsAssumedRole
+      - run: npm ci
