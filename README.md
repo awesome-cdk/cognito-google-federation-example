@@ -24,3 +24,4 @@ Here's a Sequence Diagram, describing the user's journey:
 This repo is an example AWS CDK project that demonstrates how you can provision the whole AWS infrastructure, including
 a dummy NodeJS + Express + API Gateway (with public endpoints for login and protected endpoints to demonstrate a
 protected backend API with resources, only accessible to users that went through the Google SSO procedure).
+
